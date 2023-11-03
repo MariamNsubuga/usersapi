@@ -11,12 +11,12 @@ from .serializers import *
 from rest_framework import permissions
 from rest_framework import generics
 
-class ContributorRegistration(generics.CreateAPIView):
+class ContributorRegistration(generics.ListCreateAPIView):
     queryset = Contributor.objects.all()
     serializer_class = ContributorSerializer
     permission_classes = [permissions.AllowAny]
 
-class AdminRegistration(generics.CreateAPIView):
+class AdminRegistration(generics.ListCreateAPIView):
     queryset = Admins.objects.all()
     serializer_class = AdminSerializer
     permission_classes = [permissions.AllowAny]
@@ -43,17 +43,17 @@ class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return isinstance(request.user, Admins) or request.user.is_staff
 
-# class CustomLoginView(TokenObtainPairView):
-#     # serializer_class = CustomLoginSerializer
+class CustomLoginView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if 'username' in request.data and 'password' in request.data:
+            username = request.data['username']
+            password = request.data['password']
 
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
+            is_contributor = True  
 
-#         if serializer.is_valid(raise_exception=True):
-#             user_type = serializer.validated_data['user_type']
-#             if user_type == 'contributor':
-#                 return ContributorLoginObtainToken.as_view()(request._request)
-#             elif user_type == 'admin':
-#                 return AdminLoginObtainToken.as_view()(request._request)
-#             else:
-#                 return Response({'error': 'Invalid user type'}, status=400)
+            if is_contributor:
+                self.serializer_class = ContributorSerializer
+            else:
+                self.serializer_class = AdminSerializer
+
+        return super(CustomLoginView, self).post(request, *args, **kwargs)
